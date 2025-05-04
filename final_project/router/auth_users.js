@@ -54,7 +54,7 @@ regd_users.post("/register", (req, res) => {
   users.push({ username, password });  // Store the user (in production, hash the password)
 
   // Respond with a success message
-  return res.status(201).json({ message: "User registered successfully!" });
+  return res.status(201).json({ message: "Customer successfully registered! Now you can login" });
 });
 
 // User Login Route
@@ -77,7 +77,8 @@ regd_users.post("/login", (req, res) => {
       username: username,
     };
     
-    return res.status(200).json({ message: "Login successful" });
+    return res.status(200).send('Customer successfully logged in');
+
   } else {
     return res.status(401).json({ message: "Invalid username or password." });
   }
@@ -86,7 +87,7 @@ regd_users.post("/login", (req, res) => {
 // Add or Update a Book Review
 regd_users.put("/auth/review/:isbn", authenticateSessionJWT, (req, res) => {
   const { isbn } = req.params;
-  const { review } = req.body;
+  const { review } = req.query;
 
   if (!review) {
     return res.status(400).json({ message: "Review is required." });
@@ -102,7 +103,7 @@ regd_users.put("/auth/review/:isbn", authenticateSessionJWT, (req, res) => {
     books[isbn].reviews = books[isbn].reviews || {};
     books[isbn].reviews[req.user.username] = review;
 
-    return res.status(200).json({ message: "Review added/updated successfully." });
+    return res.status(200).send(`The review for the book with ISBN ${isbn} has been added/updated`);
   } catch (error) {
     console.error("Error updating review:", error);
     return res.status(500).json({ message: "Failed to update review" });
@@ -120,7 +121,7 @@ regd_users.delete("/auth/review/:isbn", authenticateSessionJWT, (req, res) => {
   try {
     if (books[isbn].reviews && books[isbn].reviews[req.user.username]) {
       delete books[isbn].reviews[req.user.username];
-      return res.status(200).json({ message: "Review deleted successfully." });
+      return res.status(200).send(`Review for the ISBN ${isbn} posted by the user test deleted.`);
     } else {
       return res.status(404).json({ message: "Review not found." });
     }

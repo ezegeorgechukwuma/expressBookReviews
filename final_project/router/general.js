@@ -14,20 +14,22 @@ const fetchBooks = () => {
 // 1. Get the book list available in the shop using async-await
 public_users.get('/', async function (req, res) {
   try {
-    const allBooks = await fetchBooks();
-    res.status(200).send(JSON.stringify(allBooks, null, 4));
+    const allBooks = await fetchBooks(); 
+    res.status(200).json({ books: allBooks });
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch books." });
   }
 });
 
+
 // 2. Get book details based on ISBN using Promise
 public_users.get('/isbn/:isbn', function (req, res) {
   const isbn = req.params.isbn;
 
+//   implementing promise method .then(..) to handle success and .catch(..) to handle failure
   fetchBooks().then((books) => {
     if (books[isbn]) {
-      const bookWithIsbn = { isbn, ...books[isbn] };
+      const bookWithIsbn = { ...books[isbn] };
       res.status(200).json(bookWithIsbn);
     } else {
       res.status(404).json({ message: "No book found for the given ISBN." });
@@ -45,10 +47,13 @@ public_users.get('/author/:author', async function (req, res) {
     const bookData = await fetchBooks();
     const booksByAuthor = Object.entries(bookData)
       .filter(([_, book]) => book.author.toLowerCase() === author.toLowerCase())
-      .map(([isbn, book]) => ({ isbn, ...book }));
+      .map(([isbn, book]) => {
+        const { author, ...bookWithoutAuthor } = book;
+        return { isbn, ...bookWithoutAuthor };
+      });
 
     if (booksByAuthor.length > 0) {
-      res.status(200).json(booksByAuthor);
+      res.status(200).json({ booksByAuthor });
     } else {
       res.status(404).json({ message: "No books found for the given author." });
     }
@@ -57,17 +62,21 @@ public_users.get('/author/:author', async function (req, res) {
   }
 });
 
+
 // 4. Get all books based on title using Promise
 public_users.get('/title/:title', function (req, res) {
   const title = req.params.title;
-
+//   using  promise method .then(..) to handle success and .catch(..) to handle failure
   fetchBooks().then((bookData) => {
     const booksByTitle = Object.entries(bookData)
       .filter(([_, book]) => book.title.toLowerCase() === title.toLowerCase())
-      .map(([isbn, book]) => ({ isbn, ...book }));
+      .map(([isbn, book]) => {
+        const { title, ...bookWithoutTitle } = book;
+        return { isbn, ...bookWithoutTitle };
+      });
 
     if (booksByTitle.length > 0) {
-      res.status(200).json(booksByTitle);
+      res.status(200).json({ booksByTitle });
     } else {
       res.status(404).json({ message: "No books found for the given title." });
     }
