@@ -4,69 +4,93 @@ let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
 const public_users = express.Router();
 
+// Simulated async fetch function (like Axios would use)
+const fetchBooks = () => {
+  return new Promise((resolve, reject) => {
+    resolve(books);
+  });
+};
 
-// Get the book list available in the shop
-public_users.get('/',function (req, res) {
-    // retrives all the listed books
-    res.send(JSON.stringify(books,null,4));
+// 1. Get the book list available in the shop using async-await
+public_users.get('/', async function (req, res) {
+  try {
+    const allBooks = await fetchBooks();
+    res.status(200).send(JSON.stringify(allBooks, null, 4));
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch books." });
+  }
 });
 
-// Get book details based on ISBN
+// 2. Get book details based on ISBN using Promise
 public_users.get('/isbn/:isbn', function (req, res) {
-    const isbn = req.params.isbn;
+  const isbn = req.params.isbn;
 
+  fetchBooks().then((books) => {
     if (books[isbn]) {
-        // Add the ISBN back into the response object
-        const bookWithIsbn = { isbn, ...books[isbn] };
-        return res.status(200).json(bookWithIsbn);
+      const bookWithIsbn = { isbn, ...books[isbn] };
+      res.status(200).json(bookWithIsbn);
     } else {
-        return res.status(404).json({ message: "No book found for the given ISBN." });
+      res.status(404).json({ message: "No book found for the given ISBN." });
     }
+  }).catch(() => {
+    res.status(500).json({ message: "Error retrieving book." });
+  });
 });
-// Get book details based on author
-public_users.get('/author/:author', function (req, res) {
-    const author = req.params.author;
 
-    // Filter books where the author matches (case-sensitive)
-    const booksByAuthor = Object.entries(books)
-             .filter(([isbn,book]) => book.author.toLowerCase() === author.toLowerCase())
-             .map(([isbn, book]) => ({ isbn, ...book }));
+// 3. Get book details based on author using async-await
+public_users.get('/author/:author', async function (req, res) {
+  const author = req.params.author;
+
+  try {
+    const bookData = await fetchBooks();
+    const booksByAuthor = Object.entries(bookData)
+      .filter(([_, book]) => book.author.toLowerCase() === author.toLowerCase())
+      .map(([isbn, book]) => ({ isbn, ...book }));
 
     if (booksByAuthor.length > 0) {
-        return res.status(200).json(booksByAuthor);
+      res.status(200).json(booksByAuthor);
     } else {
-        return res.status(404).json({ message: "No books found for the given author." });
+      res.status(404).json({ message: "No books found for the given author." });
     }
+  } catch (error) {
+    res.status(500).json({ message: "Failed to search books by author." });
+  }
 });
 
+// 4. Get all books based on title using Promise
+public_users.get('/title/:title', function (req, res) {
+  const title = req.params.title;
 
-// Get all books based on title
-public_users.get('/title/:title',function (req, res) {
-    const title =req.params.title;
+  fetchBooks().then((bookData) => {
+    const booksByTitle = Object.entries(bookData)
+      .filter(([_, book]) => book.title.toLowerCase() === title.toLowerCase())
+      .map(([isbn, book]) => ({ isbn, ...book }));
 
-     // Filter books where the author matches (case-sensitive)
-     const booksByTitle = Object.entries(books)
-        .filter(([isbn, book]) => book.title.toLowerCase() === title.toLowerCase())
-        .map(([isbn, book]) => ({ isbn, ...book })); // Add the isbn back to the result
-        
     if (booksByTitle.length > 0) {
-        return res.status(200).json(booksByTitle);
+      res.status(200).json(booksByTitle);
     } else {
-        return res.status(404).json({ message: "No books found for the given author." });
+      res.status(404).json({ message: "No books found for the given title." });
     }
+  }).catch(() => {
+    res.status(500).json({ message: "Error retrieving books by title." });
+  });
 });
 
-//  Get book review
-public_users.get('/review/:isbn',function (req, res) {
-    const isbn = req.params.isbn;
-    
-    // Check if the book exists
-    if (books[isbn]) {
-        // Return the reviews of the book
-        return res.status(200).json(books[isbn].reviews);
+// 5. Get book reviews using async-await
+public_users.get('/review/:isbn', async function (req, res) {
+  const isbn = req.params.isbn;
+
+  try {
+    const allBooks = await fetchBooks();
+
+    if (allBooks[isbn]) {
+      res.status(200).json(allBooks[isbn].reviews);
     } else {
-        return res.status(404).json({ message: "No book found for the given ISBN." });
+      res.status(404).json({ message: "No book found for the given ISBN." });
     }
+  } catch (error) {
+    res.status(500).json({ message: "Failed to retrieve reviews." });
+  }
 });
 
 module.exports.general = public_users;
